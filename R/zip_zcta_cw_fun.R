@@ -47,6 +47,8 @@
 #' (2-letter state abbreviation). If po_city_names = F, then the two columns
 #' "po_city" and "state" will not be included.
 #'
+#' @importFrom magrittr %>%
+#' @importFrom rlang .data
 #' @export
 #'
 #' @examples
@@ -54,7 +56,8 @@
 #' cw_2017_2021 <- zip_zcta_cw_fun(years = c(2017:2021))
 #'
 zip_zcta_cw_fun <- function(years = c(2009:2021), po_city_names = T){
-  if(!(unique(years) %in% c(2009:2021))){
+  check_years <- unique(years) %in% c(2009:2021)
+  if(F %in% check_years){
     stop("Years provided must be between 2009-2021 (inclusive)")}
   years_zcta_files <- years
   url_base <- "https://udsmapper.org/wp-content/uploads/2022/10/"
@@ -130,20 +133,24 @@ zip_zcta_cw_fun <- function(years = c(2009:2021), po_city_names = T){
                     ifelse(result_data$zcta == result_data$zip, "match",
                            ifelse(result_data$zcta != result_data$zip, "merge",
                                   NA))))
+    result_data$zcta[grepl(x = result_data$zcta,
+                           pattern =
+                             "[[:alpha:]]|[[:punct:]]|[[:space:]]")] <- NA
+    result_data$zcta[nchar(result_data$zcta) < 5] <- NA
+    result_data$zcta[nchar(result_data$zcta) > 5] <- NA
     result_data$zcta <-
       ifelse(is.na(result_data$zcta),
              NA,
-             ifelse(grepl(x = result_data$zcta,
-                          pattern = "[[:alpha:]]|[[:punct:]]|[[:space:]]"),
-                    NA,
-                    sprintf("%05i", as.numeric(result_data$zcta))))
+             sprintf("%05i", as.numeric(result_data$zcta)) )
+    result_data$zip[grepl(x = result_data$zip,
+                          pattern =
+                            "[[:alpha:]]|[[:punct:]]|[[:space:]]")] <- NA
+    result_data$zip[nchar(result_data$zip) < 5] <- NA
+    result_data$zip[nchar(result_data$zip) > 5] <- NA
     result_data$zip <-
       ifelse(is.na(result_data$zip),
              NA,
-             ifelse(grepl(x = result_data$zip,
-                          pattern = "[[:alpha:]]|[[:punct:]]|[[:space:]]"),
-                    NA,
-                    sprintf("%05i", as.numeric(result_data$zip))))
+             sprintf("%05i", as.numeric(result_data$zip)))
     result_data$year <- year_i
     result_data <- result_data[c("zip", "zcta", "zip_type", "year")]
     po_name_data <- this_data[,c("zip", "zcta", "po_city",
@@ -163,29 +170,29 @@ zip_zcta_cw_fun <- function(years = c(2009:2021), po_city_names = T){
     })
   ## BIND ALL YEARS TOGETHER, DETERMINE THE PRIORITY LEVEL OF THE ROWS
   zip_zcta_priority_info <- do.call(rbind, zip_zcta_result_data) %>%
-    dplyr::filter(!is.na(zcta)) %>%
-    dplyr::filter(!is.na(zip)) %>%
+    dplyr::filter(!is.na(.data$zcta)) %>%
+    dplyr::filter(!is.na(.data$zip)) %>%
     dplyr::mutate(type_priority =
-                    dplyr::case_when(zip_type %in% "Standard" ~ 1,
-                                     zip_type %in% "P.O. Box" ~ 2,
-                                     zip_type %in% "add ZIP" ~ 3,
-                                     zip_type %in% "ZCTA Add" ~ 4,
-                                     zip_type %in% "ZCTA missing ZIP" ~ 5,
-                                     zip_type %in% "Legacy" ~ 6,
-                                     zip_type %in% "Military" ~ 7 ,
+                    dplyr::case_when(.data$zip_type %in% "Standard" ~ 1,
+                                     .data$zip_type %in% "P.O. Box" ~ 2,
+                                     .data$zip_type %in% "add ZIP" ~ 3,
+                                     .data$zip_type %in% "ZCTA Add" ~ 4,
+                                     .data$zip_type %in% "ZCTA missing ZIP" ~ 5,
+                                     .data$zip_type %in% "Legacy" ~ 6,
+                                     .data$zip_type %in% "Military" ~ 7 ,
                                      T ~ 9)) %>%
-    dplyr::group_by(zip, zcta) %>%
-    dplyr::summarize(latest_year = max(year, na.rm = T),
-                     type_priority = min(type_priority, na.rm = F),
+    dplyr::group_by(.data$zip, .data$zcta) %>%
+    dplyr::summarize(latest_year = max(.data$year, na.rm = T),
+                     type_priority = min(.data$type_priority, na.rm = F),
                      n_years = dplyr::n())
   n_zips_check <- length(unique(zip_zcta_priority_info$zip))
   # FOR EACH ZIP CODE, GET THE MIN TYPE PRIORITY, MAX LATEST YEAR,
   # AND MAX N YEARS
   print(n_zips_check)
   zip_best_info_1 <- zip_zcta_priority_info %>%
-    dplyr::group_by(zip) %>%
-    dplyr::summarize(min_type_priority = min(type_priority, na.rm = T),
-                     n_zcta_1 = length(unique(zcta)))
+    dplyr::group_by(.data$zip) %>%
+    dplyr::summarize(min_type_priority = min(.data$type_priority, na.rm = T),
+                     n_zcta_1 = length(unique(.data$zcta)))
   # MERGE THE "BEST" (MINIMUM TYPE) INFO BACK TO THE FULL PRIORITY DATA,
   # SELECT THE BEST TYPE.
   zip_zcta_cw_1_merge <- merge(zip_zcta_priority_info,
@@ -198,9 +205,9 @@ zip_zcta_cw_fun <- function(years = c(2009:2021), po_city_names = T){
     stop("Something went wrong with priority step 1")}
   # SAME WITH N YEARS
   zip_best_info_2 <- zip_zcta_cw_1 %>%
-    dplyr::group_by(zip) %>%
-    dplyr::summarize(max_n_years = max(n_years, na.rm = T),
-                     n_zcta_2 = length(unique(zcta)))
+    dplyr::group_by(.data$zip) %>%
+    dplyr::summarize(max_n_years = max(.data$n_years, na.rm = T),
+                     n_zcta_2 = length(unique(.data$zcta)))
   zip_zcta_cw_2_merge <- merge(zip_zcta_cw_1,
                                zip_best_info_2,
                                by = "zip", all = T)
@@ -211,9 +218,9 @@ zip_zcta_cw_fun <- function(years = c(2009:2021), po_city_names = T){
     stop("Something went wrong with priority step 2")}
   # SAME WITH MOST RECENT YEAR
   zip_best_info_3 <- zip_zcta_cw_2 %>%
-    dplyr::group_by(zip) %>%
-    dplyr::summarize(max_latest_year = max(latest_year, na.rm = T),
-                     n_zcta_3 = length(unique(zcta)))
+    dplyr::group_by(.data$zip) %>%
+    dplyr::summarize(max_latest_year = max(.data$latest_year, na.rm = T),
+                     n_zcta_3 = length(unique(.data$zcta)))
   zip_zcta_cw_3_merge <- merge(zip_zcta_cw_2,
                                zip_best_info_3,
                                by = "zip", all = T)
@@ -234,18 +241,18 @@ zip_zcta_cw_fun <- function(years = c(2009:2021), po_city_names = T){
       po_name_data_filtered[!is.na(po_name_data_filtered$type_priority),]
     ## BIND ALL YEARS TOGETHER, DETERMINE THE PRIORITY LEVEL OF THE ROWS
     names_best_info_1 <- po_name_data_filtered %>%
-      dplyr::filter(!is.na(zcta)) %>%
-      dplyr::filter(!is.na(zip)) %>%
-      dplyr::group_by(zip, zcta, po_city, state) %>%
-      dplyr::summarize(latest_year = max(year, na.rm = T),
+      dplyr::filter(!is.na(.data$zcta)) %>%
+      dplyr::filter(!is.na(.data$zip)) %>%
+      dplyr::group_by(.data$zip, .data$zcta, .data$po_city, .data$state) %>%
+      dplyr::summarize(latest_year = max(.data$year, na.rm = T),
                        n_years = dplyr::n())
     n_zips_check <- length(unique(names_best_info_1$zip))
     print(n_zips_check)
     names_best_info_2 <- names_best_info_1 %>%
-      dplyr::group_by(zip, zcta) %>%
-      dplyr::summarize(max_n_years = max(n_years, na.rm = T),
+      dplyr::group_by(.data$zip, .data$zcta) %>%
+      dplyr::summarize(max_n_years = max(.data$n_years, na.rm = T),
                        n_names_2 = dplyr::n()) %>%
-      ungroup()
+      dplyr::ungroup()
     names_best_info_2_merge <- merge(names_best_info_1,
                                      names_best_info_2,
                                      by = c("zip", "zcta"), all = T)
@@ -257,10 +264,10 @@ zip_zcta_cw_fun <- function(years = c(2009:2021), po_city_names = T){
       stop("Something went wrong with priority step 2")}
     # SAME WITH MOST RECENT YEAR
     names_best_info_3 <- po_name_data_2 %>%
-      dplyr::group_by(zip, zcta) %>%
-      dplyr::summarize(max_latest_year = max(latest_year, na.rm = T),
+      dplyr::group_by(.data$zip, .data$zcta) %>%
+      dplyr::summarize(max_latest_year = max(.data$latest_year, na.rm = T),
                        n_names_3 = dplyr::n()) %>%
-      ungroup()
+      dplyr::ungroup()
     names_best_info_3_merge <- merge(po_name_data_2,
                                      names_best_info_3,
                                      by = c("zip", "zcta"), all = T)
