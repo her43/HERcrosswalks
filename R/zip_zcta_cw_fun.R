@@ -1,36 +1,61 @@
-### ZIP CODE TO ZCTA CROSSWALK FUNCTION
-# CODE AUTHOR: HEATHER ROLLINS
-# DATA SOURCE: FROM UDSMAPPER.ORG
-# SITE: https://udsmapper.org/zip-code-to-zcta-crosswalk/
-library(readxl)
-library(rio)
-library(tidyverse)
-# OPTIONS FOR YEARS TO INCLUDE IN THE DATA , AND WHETHER YOU WANT PO CITY NAME
-# INPUT:
-#        years
-#           = a vector of numeric years that you want to consider crosswalk
-#             data for (limited to any combination of years between
-#             2009 and 2021).
-#             Default: c(2009:2021)
-#        po_city_names
-#           = T/F boolean, indicate whether you want your final
-#             data returned to include Post office city names and
-#             states for the zip code in each row (T), or not (F).
-#             Default: T
-# OUTPUT: a data.frame containing the crosswalk between ZIP Code and ZCTA,
-#         with the best match determined by the priority order of:
-#         (1) populated ZIP code, rather than PO Box or other type,
-#         (2) the ZIP-ZCTA match with the highest number of years that
-#             these ZIP and ZCTA matched in the raw crosswalks
-#         (3) the most recent year's match out of all remaining options.
-#         Columns in the data: zip, zcta, po_city, state
-
+#' Create a ZIP Code-ZCTA crosswalk for a range of years.
+#'
+#' Function to create a best-match ZIP Code-to-ZCTA crosswalk over a multi-year
+#' period.
+#'
+#' Over time, many details about ZIP Codes change, including geographical
+#' location and boundaries, post office names, population sizes, and type
+#' (standard, PO box, military, etc.). ZCTA (ZIP Code Tabulation Area)
+#' assignments for ZIP codes may also change by year.
+#'
+#' The best ZCTA match for each ZIP Code over a span of multiple years
+#' is determined via algorithm using the following considerations, in order,
+#' to narrow down options:
+#'
+#' (1) ZIP Code Type: ZIP Code type may change over time. Populated standard
+#' ZIP Codes have priority over other ZIP Code types, such as PO box;
+#'
+#' (2) Consistency: The ZCTA assigned to the ZIP Code for the greatest number
+#' of years is selected;
+#'
+#' (3) Time: The most recent year's ZIP-ZCTA match is selected
+#' out of the remaining options, if there are still multiple matches.
+#'
+#' Post office city names are determined by a similar but simpler set of
+#' considerations:
+#'
+#' (1) Consistency: The city name assigned to the ZIP Code for the greatest
+#' number of years is selected;
+#'
+#' (2) Time: The most recent year's ZIP Code PO city name assignment is selected
+#' out of the remaining options, if there are still multiple matches.
+#'
+#' Single-year ZIP-ZCTA tables are sourced from: https://udsmapper.org
+#'
+#' @param years a numeric vector of years (limited to 2009 through 2021)
+#' @param po_city_names A Boolean (T/F) indicating whether to include post
+#' office city names and states of ZIP Codes in the returned data.
+#'
+#' @return A data.frame containing the best-match crosswalk between ZIP Code
+#' and ZCTA.
+#'
+#' The crosswalk contains one row per ZIP Code. In many cases, several ZIP Codes
+#' may match to a single ZCTA.
+#'
+#' Columns in the returned data are: "zip" (5 digit ZIP Code),
+#' "zcta" (5-digit ZCTA code), "po_city" (post office city name), "state"
+#' (2-letter state abbreviation). If po_city_names = F, then the two columns
+#' "po_city" and "state" will not be included.
+#'
+#' @export
+#'
+#' @examples
+#' cw_2009_2021 <- zip_zcta_cw_fun()
+#' cw_2017_2021 <- zip_zcta_cw_fun(years = c(2017:2021))
+#'
 zip_zcta_cw_fun <- function(years = c(2009:2021), po_city_names = T){
   if(!(unique(years) %in% c(2009:2021))){
     stop("Years provided must be between 2009-2021 (inclusive)")}
-  library(readxl)
-  library(rio)
-  library(tidyverse)
   years_zcta_files <- years
   url_base <- "https://udsmapper.org/wp-content/uploads/2022/10/"
   ## USE RIO IMPORT FUNCTION
@@ -141,18 +166,18 @@ zip_zcta_cw_fun <- function(years = c(2009:2021), po_city_names = T){
     dplyr::filter(!is.na(zcta)) %>%
     dplyr::filter(!is.na(zip)) %>%
     dplyr::mutate(type_priority =
-                    case_when(zip_type %in% "Standard" ~ 1,
-                              zip_type %in% "P.O. Box" ~ 2,
-                              zip_type %in% "add ZIP" ~ 3,
-                              zip_type %in% "ZCTA Add" ~ 4,
-                              zip_type %in% "ZCTA missing ZIP" ~ 5,
-                              zip_type %in% "Legacy" ~ 6,
-                              zip_type %in% "Military" ~ 7 ,
-                              T ~ 9)) %>%
+                    dplyr::case_when(zip_type %in% "Standard" ~ 1,
+                                     zip_type %in% "P.O. Box" ~ 2,
+                                     zip_type %in% "add ZIP" ~ 3,
+                                     zip_type %in% "ZCTA Add" ~ 4,
+                                     zip_type %in% "ZCTA missing ZIP" ~ 5,
+                                     zip_type %in% "Legacy" ~ 6,
+                                     zip_type %in% "Military" ~ 7 ,
+                                     T ~ 9)) %>%
     dplyr::group_by(zip, zcta) %>%
     dplyr::summarize(latest_year = max(year, na.rm = T),
                      type_priority = min(type_priority, na.rm = F),
-                     n_years = n())
+                     n_years = dplyr::n())
   n_zips_check <- length(unique(zip_zcta_priority_info$zip))
   # FOR EACH ZIP CODE, GET THE MIN TYPE PRIORITY, MAX LATEST YEAR,
   # AND MAX N YEARS
@@ -213,13 +238,13 @@ zip_zcta_cw_fun <- function(years = c(2009:2021), po_city_names = T){
       dplyr::filter(!is.na(zip)) %>%
       dplyr::group_by(zip, zcta, po_city, state) %>%
       dplyr::summarize(latest_year = max(year, na.rm = T),
-                       n_years = n())
+                       n_years = dplyr::n())
     n_zips_check <- length(unique(names_best_info_1$zip))
     print(n_zips_check)
     names_best_info_2 <- names_best_info_1 %>%
       dplyr::group_by(zip, zcta) %>%
       dplyr::summarize(max_n_years = max(n_years, na.rm = T),
-                       n_names_2 = n()) %>%
+                       n_names_2 = dplyr::n()) %>%
       ungroup()
     names_best_info_2_merge <- merge(names_best_info_1,
                                      names_best_info_2,
@@ -234,7 +259,7 @@ zip_zcta_cw_fun <- function(years = c(2009:2021), po_city_names = T){
     names_best_info_3 <- po_name_data_2 %>%
       dplyr::group_by(zip, zcta) %>%
       dplyr::summarize(max_latest_year = max(latest_year, na.rm = T),
-                       n_names_3 = n()) %>%
+                       n_names_3 = dplyr::n()) %>%
       ungroup()
     names_best_info_3_merge <- merge(po_name_data_2,
                                      names_best_info_3,
