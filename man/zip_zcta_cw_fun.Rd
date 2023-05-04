@@ -21,7 +21,7 @@ may match to a single ZCTA.
 
 Columns in the returned data are: "zip" (5 digit ZIP Code),
 "zcta" (5-digit ZCTA code), "po_city" (post office city name), "state"
-(2-letter state abbreviation). If po_city_names = F, then the two columns
+(2-letter state abbreviation). If \code{po_city_names = F}, then the two columns
 "po_city" and "state" will not be included.
 }
 \description{
