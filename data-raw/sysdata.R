@@ -813,10 +813,89 @@ city_county_2010_cw <- rbind(city_county_2010_cw,
                              new2010row_maconbibb,
                              new2010row_southfulton,
                              new2010row_stonecrest)
+
+
+
+##########################################################################
+##### CENSUS TRACT TO ZCTA - 2000 BOUNDARIES #####
+library(tidyverse)
+
+#### CROSSWALK 2000 TRACT TO ZCTA ######
+path_geocorr <-
+  paste0("C:/Users/her43/OneDrive - Drexel University/",
+         "Functional Programming Project HCUP/data/geocorr_tract_ZCTA/")
+tract_zcta_2000_info <-
+  read.csv(file = paste0(path_geocorr,"geocorr2000_tract_to_ZCTA.csv"),
+           nrows = 2)
+raw_tract_zcta_2000 <-
+  read.csv(file = paste0(path_geocorr,"geocorr2000_tract_to_ZCTA.csv"),
+           skip = 2,
+           header = F,
+           col.names = colnames(tract_zcta_2000_info))
+
+zcta_2000_pop_sums <- raw_tract_zcta_2000 %>%
+  dplyr::group_by(zcta5) %>%
+  dplyr::summarize(pop_zcta_2000 = sum(pop2k, na.rm = T))
+
+tract_2000_pop_sums <- raw_tract_zcta_2000 %>%
+  dplyr::group_by(county, tract) %>%
+  dplyr::summarize(pop_tract_2000 = sum(pop2k, na.rm = T))
+
+tract_zcta_2000_cw <-
+  merge(raw_tract_zcta_2000,tract_2000_pop_sums,
+        by = c("county", "tract"),
+        all = T) %>%
+  full_join(x=., y = zcta_2000_pop_sums, by = "zcta5") %>%
+  mutate(county_fips = sprintf("%05d", county),
+         tract_fips = paste0(county_fips,
+                             sprintf("%06d", round(100*tract))),
+         state_fips = substr(county_fips, 1, 2),
+         p_zcta = round(pop2k/pop_zcta_2000, 10),
+         p_tract = round(pop2k/pop_tract_2000, 10)) %>%
+  dplyr::select(state_fips, county_fips, tract_fips, zcta = zcta5,
+                pop = pop2k, p_tract, p_zcta)
+
+#### CROSSWALK 2010 TRACT TO ZCTA ##########
+
+tract_zcta_2010_info <-
+  read.csv(file = paste0(path_geocorr,"geocorr2014_tract_to_ZCTA.csv"),
+           nrows = 2)
+raw_tract_zcta_2010 <-
+  read.csv(file = paste0(path_geocorr,"geocorr2014_tract_to_ZCTA.csv"),
+           skip = 2,
+           header = F,
+           col.names = colnames(tract_zcta_2010_info))
+zcta_2010_pop_sums <- raw_tract_zcta_2010 %>%
+  dplyr::group_by(zcta5) %>%
+  dplyr::summarize(pop_zcta_2010 = sum(pop10, na.rm = T))
+
+tract_2010_pop_sums <- raw_tract_zcta_2010 %>%
+  dplyr::group_by(county, tract) %>%
+  dplyr::summarize(pop_tract_2010 = sum(pop10, na.rm = T))
+
+tract_zcta_2010_cw <-
+  merge(raw_tract_zcta_2010,tract_2010_pop_sums,
+        by = c("county", "tract"),
+        all = T) %>%
+  full_join(x=., y = zcta_2010_pop_sums, by = "zcta5") %>%
+  mutate(zcta5 = sprintf("%05d", as.numeric(zcta5)),
+         county_fips = sprintf("%05d", county),
+         tract_fips = paste0(county_fips,
+                             sprintf("%06d", round(100*tract))),
+         state_fips = substr(county_fips, 1, 2),
+         p_zcta = round(pop10/pop_zcta_2010, 10),
+         p_tract = round(pop10/pop_tract_2010, 10)) %>%
+  dplyr::select(state_fips, county_fips, tract_fips, zcta = zcta5,
+                pop = pop10, p_tract, p_zcta) %>%
+  dplyr::filter(!(zcta %in% "99999"))
 ########################################
 ### SAVE DATA
 usethis::use_data(city_county_2020_cw,
                   city_county_2010_cw,
                   city_pop_by_year,
+                  tract_zcta_2010_cw,
+                  tract_zcta_2000_cw,
+
                   overwrite = TRUE,
                   internal = T)
+
