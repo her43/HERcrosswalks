@@ -2,5 +2,6 @@
 
 export(city_county_proxies_fun)
 export(zip_zcta_cw_fun)
+export(hello_cat)
 importFrom(magrittr,"%>%")
 importFrom(rlang,.data)
