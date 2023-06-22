@@ -1,3 +1,15 @@
+# PICK A USER AKA COMPUTER FIRST
+curr_user <- "tiger"
+curr_user <- "her43"
+# DEFINE FOLDER PATHS
+path_onedrive_hcup_data <-
+  paste0("C:/Users/",curr_user,"/OneDrive - Drexel University/",
+         "Functional Programming Project HCUP/data/")
+path_geocorr_cdp_county <-
+  paste0(path_onedrive_hcup_data, "geocorr_cdp_county/")
+path_geocorr_tract_zcta <-
+  paste0(path_onedrive_hcup_data, "geocorr_tract_ZCTA/")
+library(tidyverse)
 #### PLACES FIPS CODES FROM CENSUS.GOV #########################################
 place_fips_url <- paste0("https://www2.census.gov/geo/docs/reference/",
                          "codes/files/national_places.txt")
@@ -79,18 +91,13 @@ place_rel_ga <- place_rel_ga %>%
 # "Geocorr 2022 uses geography from the 2020 census and beyond."
 # https://mcdc.missouri.edu/applications/geocorr2022.html
 
-path_data_geocorr <-
-  paste0("C:/Users/her43/OneDrive - Drexel University/",
-         "Functional Programming Project HCUP/",
-         "data/geocorr_cdp_county/")
-
 # LOAD IN INDIVIDUAL 2022 DATA SETS, CREATE ONE "ALL"/FULL USA DATA SET
-geocorr2022_files <- list.files(path = path_data_geocorr,
+geocorr2022_files <- list.files(path = path_geocorr_cdp_county,
                                 pattern = "geocorr2022")
 city_county_2020_cw <- lapply(geocorr2022_files, function(i){
-  headers <- read.csv(file = paste0(path_data_geocorr, i),
+  headers <- read.csv(file = paste0(path_geocorr_cdp_county, i),
                       header = F, nrows = 1)
-  temp  <- read.csv(file = paste0(path_data_geocorr, i),
+  temp  <- read.csv(file = paste0(path_geocorr_cdp_county, i),
                     header = F, skip = 2)
   colnames(temp) <- as.vector(headers)
   return(temp)
@@ -146,14 +153,14 @@ city_county_2020_cw <-
                          "county_name", "county_fips",
                          "p_county", "p_city", "pop_overlap_2020")]
 #### 2010s #################################################
-geocorr2014_files <- list.files(path = path_data_geocorr,
+geocorr2014_files <- list.files(path = path_geocorr_cdp_county,
                                 pattern = "geocorr2014")
 geocorr2014_files <- geocorr2014_files[grepl(x = geocorr2014_files,
                                              pattern = "nonames")]
 city_county_2010_cw <- lapply(geocorr2014_files, function(i){
-  headers <- read.csv(file = paste0(path_data_geocorr, i),
+  headers <- read.csv(file = paste0(path_geocorr_cdp_county, i),
                       header = F, nrows = 1)
-  temp  <- read.csv(file = paste0(path_data_geocorr, i),
+  temp  <- read.csv(file = paste0(path_geocorr_cdp_county, i),
                     header = F, skip = 2)
   colnames(temp) <- as.vector(headers)
   return(temp)
@@ -821,14 +828,13 @@ city_county_2010_cw <- rbind(city_county_2010_cw,
 library(tidyverse)
 
 #### CROSSWALK 2000 TRACT TO ZCTA ######
-path_geocorr <-
-  paste0("C:/Users/her43/OneDrive - Drexel University/",
-         "Functional Programming Project HCUP/data/geocorr_tract_ZCTA/")
 tract_zcta_2000_info <-
-  read.csv(file = paste0(path_geocorr,"geocorr2000_tract_to_ZCTA.csv"),
+  read.csv(file = paste0(path_geocorr_tract_zcta,
+                         "geocorr2000_tract_to_ZCTA.csv"),
            nrows = 2)
 raw_tract_zcta_2000 <-
-  read.csv(file = paste0(path_geocorr,"geocorr2000_tract_to_ZCTA.csv"),
+  read.csv(file = paste0(path_geocorr_tract_zcta,
+                         "geocorr2000_tract_to_ZCTA.csv"),
            skip = 2,
            header = F,
            col.names = colnames(tract_zcta_2000_info))
@@ -858,10 +864,12 @@ tract_zcta_2000_cw <-
 #### CROSSWALK 2010 TRACT TO ZCTA ##########
 
 tract_zcta_2010_info <-
-  read.csv(file = paste0(path_geocorr,"geocorr2014_tract_to_ZCTA.csv"),
+  read.csv(file = paste0(path_geocorr_tract_zcta,
+                         "geocorr2014_tract_to_ZCTA.csv"),
            nrows = 2)
 raw_tract_zcta_2010 <-
-  read.csv(file = paste0(path_geocorr,"geocorr2014_tract_to_ZCTA.csv"),
+  read.csv(file = paste0(path_geocorr_tract_zcta,
+                         "geocorr2014_tract_to_ZCTA.csv"),
            skip = 2,
            header = F,
            col.names = colnames(tract_zcta_2010_info))
@@ -888,14 +896,29 @@ tract_zcta_2010_cw <-
   dplyr::select(state_fips, county_fips, tract_fips, zcta = zcta5,
                 pop = pop10, p_tract, p_zcta) %>%
   dplyr::filter(!(zcta %in% "99999"))
-########################################
-### SAVE DATA
+
+###### ACS DEMOGRAPHICS RAW VARS TABLE #########################################
+acs_demo_raw_vars <- read.csv(file = paste0(path_onedrive_hcup_data,
+                                            "acs_demo_raw_vars.csv"),
+                              header = T)
+colnames(acs_demo_raw_vars)[1] <- "acs_raw_var"
+
+###### STATES FIPS CODES #########################################
+states_fips <- read_xlsx(path = paste0(path_onedrive_hcup_data,
+                                            "states.xlsx"),
+                              col_names = T)
+colnames(states_fips) <- tolower(colnames(states_fips))
+states_fips$fips <- sprintf("%02d",as.numeric(states_fips$fips) )
+###############################################################
+### SAVE DATA ####\
+gc()
 usethis::use_data(city_county_2020_cw,
                   city_county_2010_cw,
                   city_pop_by_year,
                   tract_zcta_2010_cw,
                   tract_zcta_2000_cw,
-
+                  acs_demo_raw_vars,
+                  states_fips,
                   overwrite = TRUE,
                   internal = T)
 

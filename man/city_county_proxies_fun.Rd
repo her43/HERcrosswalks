@@ -105,7 +105,9 @@ a county or place change, but so will its geographic ID/FIPS code.
 Due to limitations of the source data, some cities which ceased to
 exist (in their original forms) prior to 2019 may not be included in the
 data at all, or may be listed as different (post-2019 equivalent) names or
-FIPS codes than what would have existed at an earlier time.
+FIPS codes than what would have existed at an earlier time. User-generated
+crosswalks for earlier years may include some cities which did not exist yet
+in those earlier years.
 
 Additionally, the county proxies returned in the requested crosswalk data
 may be different according to which \code{year} the user inputs. Requests for
