@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>/404.html</loc>
+  </url>
+  <url>
+    <loc>/authors.html</loc>
+  </url>
+  <url>
+    <loc>/index.html</loc>
+  </url>
+  <url>
+    <loc>/LICENSE-text.html</loc>
+  </url>
+  <url>
+    <loc>/LICENSE.html</loc>
+  </url>
+  <url>
+    <loc>/reference/acs_tract_to_zcta_fun.html</loc>
+  </url>
+  <url>
+    <loc>/reference/approx_zcta_demo_fun.html</loc>
+  </url>
+  <url>
+    <loc>/reference/b_table_funs.html</loc>
+  </url>
+  <url>
+    <loc>/reference/city_county_proxies_fun.html</loc>
+  </url>
+  <url>
+    <loc>/reference/index.html</loc>
+  </url>
+  <url>
+    <loc>/reference/zip_zcta_cw_fun.html</loc>
+  </url>
+</urlset>
