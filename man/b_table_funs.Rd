@@ -3,21 +3,36 @@
 \name{b01001_}
 \alias{b01001_}
 \alias{b02001_}
+\alias{b03001_}
 \alias{b03002_}
+\alias{b05012_}
+\alias{b05013_}
+\alias{b05014_}
 \alias{b17001_}
+\alias{b19013_}
 \title{ACS B-table variable list creation}
 \usage{
 b01001_(var_num)
 
 b02001_(var_num)
 
+b03001_(var_num)
+
 b03002_(var_num)
 
+b05012_(var_num)
+
+b05013_(var_num)
+
+b05014_(var_num)
+
 b17001_(var_num)
+
+b19013_(var_num)
 }
 \arguments{
-\item{var_num}{vector of numbers between 1 and 999, each representing a
-3-digit variable number within the ACS table.}
+\item{var_num}{vector of (integer) numbers greater than or equal to 1,
+each representing a 3-digit variable number within the ACS table.}
 }
 \value{
 A vector of ACS variable names
