@@ -12,11 +12,12 @@ devtools::install_github("her43/HERcrosswalks")
 
 This package contains the following functions:  
 
-acs_tract_to_zcta_fun()
-approx_zcta_demo_fun()
-city_county_proxies_fun() 
-load_tract_zcta_cw()
-zip_zcta_cw_fun()  
+ - acs_tract_to_zcta_fun()
+ - approx_zcta_demo_fun()
+ - city_county_proxies_fun() 
+ - clean_age_groups_fun()
+ - load_tract_zcta_cw()
+ - zip_zcta_cw_fun()  
 and various ACS B-table functions, e.g. b01001_()
 
 TASKS IN PROGRESS:  
