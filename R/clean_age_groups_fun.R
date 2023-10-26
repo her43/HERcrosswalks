@@ -69,10 +69,10 @@ clean_age_groups_fun <- function(age,
     age <- as.vector(age)
     age <- as.numeric(age)
     age <- floor(age)
-    if(sum(age <0) > 0){
+    if(length(which(age < 0)) > 0){
       stop("Negative age value(s). Check data.")
     }
-    if(sum(age > 130) > 0){
+    if(length(which(age > 130)) > 0){
       stop("Value(s) of age above 130. Check data.")
     }
   }
