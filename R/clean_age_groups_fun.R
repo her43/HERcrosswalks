@@ -125,8 +125,8 @@ clean_age_groups_fun <- function(age,
                            age %in% 85:150 ~ 85)
     # INFANTS
     if(sep_infant){
-      print("Selected to separate infants aged 0 from other ages 1-17.")
-      age_group[age %in% 1:17] <- 1
+      print("Selected to separate infants aged 0 from other ages 1-4.")
+      age_group[age %in% 1:4] <- 1
       ages_list <- c(0,1,seq(5,85, by = 5))
     }else{
       print("Selected combined infant age group 0 with other ages.")
